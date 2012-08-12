@@ -1,12 +1,12 @@
 CC      = gcc -g -Wall -DDEBUG
 INCDIR  = ../src -I../../../src/include/ -I../
-SOURCES = redisWS.c
-OBJECTS = redisWS.o
+SOURCES = memcachedWS.c
+OBJECTS = memcachedWS.o
 
-all: redisWS.duda
+all: memcachedWS.duda
 
-redisWS.duda: $(OBJECTS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(DEFS) -shared -Wl -o $@ $^ -lc
+memcachedWS.duda: $(OBJECTS)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(DEFS) -shared -Wl -o $@ $^ -lc -lmemcached
 
 .c.o: $(SOURCES)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(DEFS) -I$(INCDIR) -fPIC -c $<
