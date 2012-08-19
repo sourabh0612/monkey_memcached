@@ -15,7 +15,7 @@ duda_global_t my_data_empty;
  * +--------------------------------------------------------------+
  * |  Interface         Method     Param Name  Param Max Length   |
  * +--------------------------------------------------------------+
- * |  redis            version                       0            |
+ * |  libmemcached     test                          0            |
  * +--------------------------------------------------------------+
  * |                   write_key    key_name         6            |
  * |                                key_value        6            |
@@ -29,137 +29,43 @@ void cb_end(duda_request_t *dr)
 {
     msg->info("my end callback");
 }
-/*
-void connectCallback(const redisAsyncContext *c, int status) {
-    if (status != REDIS_OK) {
-        printf("Error: %s\n", c->errstr);
-        exit(1);
-        return;
-    }
-    printf("Connected...\n");
-}
 
-void disconnectCallback(const redisAsyncContext *c, int status) {
-    if (status != REDIS_OK) {
-        printf("Error: %s\n", c->errstr);
-        return;
-    }
-    printf("Disconnected...\n");
-    duda_request_t *dr = redis->getDudarequest(c);
-    response->cont(dr);
-    response->body_print(dr, "Redis test successful\n", 22);
-    response->end(dr, cb_end);
-}
-
-void versionCallback(redisAsyncContext *c, void *r, void *privdata) {
-    redisReply *reply = r;
-    if (reply == NULL) return;
-    
-    const char *field = "redis_version:";
-    char *p, *eptr;
-    int major, minor;
-
-    p = strstr(reply->str,field);
-    major = strtol(p+strlen(field),&eptr,10);
-    p = eptr+1;
-    minor = strtol(p,&eptr,10);
-    
-    printf("Version:%d.%d\n",major,minor);
-    redis->disconnect(c);
-}
-
-void getCallback(redisAsyncContext *c, void *r, void *privdata) {
-    redisReply *reply = r;
-    if (reply == NULL) return;
-    
-    printf("%s: %s\n", (char*)privdata, reply->str);
-
-    redis->disconnect(c);
-}
-
-void setCallback(redisAsyncContext *c, void *r, void *privdata) {
-    redisReply *reply = r;
-    if (reply == NULL) return;
-    
-    printf("%s\n", reply->str);
-
-    redis->disconnect(c);
-
-}
-*/
-
-memcached_return_t cb_read(const memcached_st *ptr, memcached_result_st *result, void *context)
+void libmemcached_read(const memcached_st *memc, char *value, void *context)
 {
-    printf("value:%s\n",memcached_result_key_value(result));
-    memcached_st *memc;
-    memc = ptr;
+    printf("Value:%s\n", value);
+    memcached_st *temp_memc;
+    temp_memc = memc;
     duda_request_t *dr;
     dr = (duda_request_t *)context;
-    memcached_obj->disconnect(memc);
+    memcached_obj->disconnect(temp_memc);
     response->cont(dr);
     response->body_print(dr, "Memcached test successful\n", 22);
     response->end(dr, cb_end);   
 }
 
-void cb_version(duda_request_t *dr)
+void cb_test(duda_request_t *dr)
 {
     const char *config_string = "--SERVER=127.0.0.1:12345";
-    const char *key = "sourabh";
-    const char *value = "neo";
+    const char *key = "foo";
+    const char *value = "bar";
+    size_t val_len = 3;
 
     response->http_status(dr, 200);
     response->http_header(dr, "Content-Type: text/plain", 24);
     response->wait(dr);    
     
     memcached_st *memc = memcached_obj->connect(config_string, strlen(config_string), dr);
-    
     memcached_return_t rc = memcached_obj->set(memc,key,value);
 
     if(rc != MEMCACHED_SUCCESS)
     {
-        printf("falied\n");
+        printf("%s\n", memcached_last_error_message(memc));
         exit(1);
     }
-
-//    rc = memcached_obj->get(memc, key, cb_read, dr);
-    memcached_obj->disconnect(memc);
-    response->cont(dr);
-    response->body_print(dr, "Memcached test successful\n", 22);
-    response->end(dr, cb_end);   
-
-}
-/*
-void cb_read_key(duda_request_t *dr)
-{
-    char *key;
-    const char *config_string = "--SERVER=127.0.0.1:12345";
-    response->http_status(dr, 200);
-    response->http_header(dr, "Content-Type: text/plain", 24);
-    response->wait(dr);
-
-    memcached_st * memc = memcached->connect(config_string, strlen(config_string), dr);
-
-    memcached->disconnect(memc);
-}
-
-void cb_write_key(duda_request_t *dr)
-{
-    char *key,*value;
-    response->http_status(dr, 200);
-    response->http_header(dr, "Content-Type: text/plain", 24);
+    memcached_obj->get(memc, key, &val_len, &rc, dr, libmemcached_read);
     
-    redisAsyncContext *rc = redis->connect("127.0.0.1", 6379, dr);
-    response->wait(dr);
-    
-    redis->attach(rc,dr);
-    redis->setConnectCallback(rc,connectCallback);
-    redis->setDisconnectCallback(rc, disconnectCallback);
-    key = param->get(dr, 0);
-    value = param->get(dr,1);
-    redis->command(rc, setCallback, NULL, "SET %b %b", key, strlen(key), value, strlen(value));
-
 }
-*/
+
 void *cb_global_mem()
 {
     void *mem = monkey->mem_alloc(16);
@@ -187,7 +93,7 @@ int duda_main(struct duda_api_objects *api)
     /* archive interface */
     if_system = map->interface_new("libmemcached");
 
-    method = map->method_new("version", "cb_version", 0);
+    method = map->method_new("test", "cb_test", 0);
     map->interface_add_method(method, if_system);
 /*
 

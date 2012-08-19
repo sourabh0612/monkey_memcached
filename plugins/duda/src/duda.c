@@ -361,7 +361,12 @@ int duda_request_set_method(duda_request_t *dr)
         return -1;
     }
 
-    PLUGIN_TRACE("Method %s invoked", entry_method->uid);
+#ifdef TRACE
+    if (entry_method) {
+        PLUGIN_TRACE("Method %s invoked", entry_method->uid);
+    }
+#endif
+
     return 0;
 }
 

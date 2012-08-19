@@ -12,6 +12,7 @@ memcached_st * memcached_connect(const char *server, int len,
     memcached_st *memc = memcached(server, len);
 
     memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_NO_BLOCK, 1);
+    memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, 1);
 
     if (memc == NULL) {
         printf("MEMCACHED: Can't connect: %s\n", memcached_last_error_message(memc));
@@ -29,6 +30,7 @@ memcached_st * memcached_connect(const char *server, int len,
     }
 
     mk_list_add(&dr->_head_memcached_fd, list_memcached_fd);
+
     return memc;
 }
 
@@ -40,7 +42,6 @@ void memcached_disconnect(memcached_st *memc)
 int memcached_init()
 {
     pthread_key_create(&memcached_key, NULL);
-    
     return 1;
 }
 
@@ -49,9 +50,17 @@ memcached_return_t libmemcached_set(memcached_st * memc, const char * key, const
     return memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, MEMCACHED_BEHAVIOR_NO_BLOCK);
 }
 
-memcached_return_t libmemcached_get(memcached_st * memc, const char * key, memcached_execute_fn * callback, void * dr_web)
+void libmemcached_get(memcached_st * memc, const char * key, size_t * value_len, memcached_return_t * rc,
+                        void * dr_web, void (*cb_read) (const memcached_st *, char *, void *))
 {
-    return memcached_mget_execute(memc, key, strlen(key), sizeof(key), callback, dr_web, (uint32_t)1);
+    char *value = memcached_get(memc, key, (size_t) strlen(key), value_len, NULL, rc);
+    if(!value)
+    {
+        printf("%s\n", memcached_last_error_message(memc));
+        memcached_free(memc);
+        exit(1);
+    }
+    cb_read(memc, value, dr_web);
 }
 
 duda_request_t * memcached_request_map(const memcached_st *memc)
