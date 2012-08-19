@@ -53,6 +53,8 @@ memcached_return_t libmemcached_set(memcached_st * memc, const char * key, const
 void libmemcached_get(memcached_st * memc, const char * key, size_t * value_len, memcached_return_t * rc,
                         void * dr_web, void (*cb_read) (const memcached_st *, char *, void *))
 {
+    /*FIXME: Blocking Call used
+    /*
     char *value = memcached_get(memc, key, (size_t) strlen(key), value_len, NULL, rc);
     if(!value)
     {
@@ -60,6 +62,7 @@ void libmemcached_get(memcached_st * memc, const char * key, size_t * value_len,
         memcached_free(memc);
         exit(1);
     }
+    */
     cb_read(memc, value, dr_web);
 }
 
