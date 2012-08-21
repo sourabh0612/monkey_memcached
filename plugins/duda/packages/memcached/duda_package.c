@@ -36,7 +36,7 @@ struct duda_api_memcached *get_memcached_api()
     memcached_obj->disconnect        = memcached_disconnect;  
     memcached_obj->get               = libmemcached_get;
     memcached_obj->set               = libmemcached_set;
-    memcached_obj->getDudarequest    = memcached_request_map;
+    //memcached_obj->getDudarequest    = memcached_request_map;
     
     return memcached_obj;
 }
